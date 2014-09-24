@@ -14,4 +14,4 @@ Requirements
  - Fritzbox or similar router
 
 [inwx.de]:http://inwx.de
-[1]:https://www.inwx.de/en/offer/api
+[1]:https://github.com/inwx/php-client
