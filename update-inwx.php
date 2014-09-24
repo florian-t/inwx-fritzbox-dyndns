@@ -11,12 +11,7 @@ header('Content-type: text/plain; charset=utf-8');
 ini_set('display_errors',1);
 error_reporting(E_ALL);
 require "domrobot.class.php";
-
-// set your inwx usernam and password here
-$usr = "";
-$pwd = "";
-
-define("APIURL", "https://api.domrobot.com/xmlrpc/");
+require "config.inc.php";
 
 // globals
 $domrobot = new domrobot(APIURL); 
@@ -33,7 +28,7 @@ if (isset($_GET['ip6addr'])) { // TODO check for valid ipv6 address
 //main
 try {
 	// login
-	$res = connect($usr, $pwd);
+	$res = connect($inwxUser, $inwxPassword);
 	
 	// update ipv4 if requested
 	if (isset($ip4addr)) {
@@ -131,10 +126,10 @@ function updateRecord($res, $recordId, $ipAddr) {
 /**
 * Log into inwx API
 */
-function connect($usr, $pwd) {	
+function connect($user, $password) {	
 	global $domrobot;
 	$domrobot->setDebug(false);
 	$domrobot->setLanguage('en');
-	return $domrobot->login($usr,$pwd);
+	return $domrobot->login($user,$password);
 }
 ?>

@@ -1,0 +1,9 @@
+<?php
+
+// set your inwx username and password here
+$inwxUser = '';
+$inwxPassword = '';
+
+define('APIURL', 'https://api.domrobot.com/xmlrpc/');
+
+?>
