@@ -6,4 +6,21 @@ $inwxPassword = '';
 
 define('APIURL', 'https://api.domrobot.com/xmlrpc/');
 
+$debug = false;
+
+$domains = array();
+$domains['host.example.com'] = array(
+    "active" => true,
+    "usr" => "username",
+    "pass" => "somePass"
+);
+
+/*
+$domains['host2.example.com'] = array(
+    "active" => true,
+    "usr" => "username",
+    "pass" => "somePass"
+);
+*/
+
 ?>

@@ -8,8 +8,11 @@
  */
 
 header('Content-type: text/plain; charset=utf-8');
-ini_set('display_errors',1);
-error_reporting(E_ALL);
+if ($debug) {
+    ini_set("log_errors", 1);
+    ini_set("error_log", "php-error.log");
+    error_reporting(E_ALL);
+}
 require "domrobot.class.php";
 require "config.inc.php";
 
@@ -17,35 +20,62 @@ require "config.inc.php";
 $domrobot = new domrobot(APIURL); 
 
 // GET variables from URL
-$domain = $_GET['domain'];
-if (isset($_GET['ip4addr'])) { // TODO check for valid ipv4 address
-	$ip4addr = $_GET['ip4addr'];
+if (isset($_GET['domain'])) {
+    $domain = filter_input(INPUT_GET, 'domain', FILTER_SANITIZE_STRING);
+} else {
+    abortOnError(400, 'No target domain specified');
 }
-if (isset($_GET['ip6addr'])) { // TODO check for valid ipv6 address
-	$ip6addr = $_GET['ip6addr'];
+if (isset($_GET['ip4addr'])) {
+	$ip4addr = filter_input(INPUT_GET, 'ip4addr', FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+    if (!$ip4addr) abortOnError(400, 'Invalid IPv4');
+}
+if (isset($_GET['ip6addr'])) {
+	$ip6addr = filter_input(INPUT_GET, 'ip6addr', FILTER_VALIDATE_IP, FILTER_FLAG_IPV6);
+    if (!$ip6addr) abortOnError(400, 'Invalid IPv6');
 }
 
-//main
+// get username and password from $_SERVER
+if (isset($_SERVER['PHP_AUTH_USER'])) {
+    $dynDomainUser = filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING);
+} else {
+    abortOnError(400, 'No Username provided');
+}
+if (isset($_SERVER['PHP_AUTH_PW'])) {
+    $dynDomainPass = filter_var($_SERVER['PHP_AUTH_PW'], FILTER_SANITIZE_STRING);
+} else {
+    abortOnError(400, 'No password provided');
+}
+
+// Main
 try {
-	// login
-	$res = connect($inwxUser, $inwxPassword);
-	
-	// update ipv4 if requested
-	if (isset($ip4addr)) {
-		$recordId = requestRecordId($res, $domain, "ipv4");
-		updateRecord($res, $recordId, $ip4addr);
-	}
-	
-	// update ipv6 if requeste
-	if (isset($ip6addr)) {
-		$recordId = requestRecordId($res, $domain, "ipv6");
-		updateRecord($res, $recordId, $ip6addr);
-	}
-	
-	// done, logout
-	$domrobot->logout();
+    if (array_key_exists($domain, $domains) && $domains[$domain]['active']) {
+        if ($dynDomainUser === $domains[$domain]['usr'] && $dynDomainPass === $domains[$domain]['pass']) {   	
+            // login
+        	$res = connect($inwxUser, $inwxPassword);
+        	
+        	// update ipv4 if requested
+        	if (isset($ip4addr)) {
+        		$recordId = requestRecordId($res, $domain, 'ipv4');
+        		updateRecord($res, $recordId, $ip4addr);
+        	}
+        	
+        	// update ipv6 if requested
+        	if (isset($ip6addr)) {
+        		$recordId = requestRecordId($res, $domain, 'ipv6');
+        		updateRecord($res, $recordId, $ip6addr);
+        	}
+        	
+        	// done, logout
+        	$domrobot->logout();  
+        } else {
+            abortOnError(403, 'wrong username or password.');      
+        }   
+    }  else {
+        abortOnError(400, 'missing domain or inactive domain'); // missing domain or inactive domain
+    }
+  
 } catch (Exception $e) {
-	print $e->getMessage();
+	error_log($e->getMessage(), 0, 'php-error.log');
 }
 
 /**
@@ -131,5 +161,21 @@ function connect($user, $password) {
 	$domrobot->setDebug(false);
 	$domrobot->setLanguage('en');
 	return $domrobot->login($user,$password);
+}
+
+/**
+* Send Header to indicate some error so Fritzbox can detect failure
+*/
+function abortOnError($httpResponse, $message) {
+    // backwards compatibilty for php<5.4  
+    if (!function_exists('http_response_code')) {
+        function http_response_code($response) {
+            header('none', false, $response);
+        }
+    }    
+
+    http_response_code($httpResponse);
+    error_log($message, 0, 'php-error.log');
+    die();
 }
 ?>
