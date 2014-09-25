@@ -4,7 +4,7 @@ Based on a Script by Thomas Klumpp: http://www.thomas-klumpp.de/2013/02/02/dyndn
 
 Status
 ----
-pre alpha, work in progress
+Beta version, needs documentation
 
 Requirements
 ----
